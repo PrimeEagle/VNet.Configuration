@@ -1,13 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace VNet.Configuration
+namespace VNet.Configuration.Attributes
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
-    public class LessThanOrEqualToPropertyAttribute : ValidationAttribute
+    public class GreaterThanOrEqualToPropertyAttribute : ValidationAttribute
     {
         private readonly string _comparisonPropertyName;
 
-        public LessThanOrEqualToPropertyAttribute(string comparisonPropertyName)
+        public GreaterThanOrEqualToPropertyAttribute(string comparisonPropertyName)
         {
             _comparisonPropertyName = comparisonPropertyName;
         }
@@ -22,7 +22,7 @@ namespace VNet.Configuration
 
             if (value is IComparable baseComparable && comparisonValue is IComparable comparisonComparable)
             {
-                if (baseComparable.CompareTo(comparisonComparable) > 0)
+                if (baseComparable.CompareTo(comparisonComparable) < 0)
                     return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
             }
 
@@ -31,7 +31,7 @@ namespace VNet.Configuration
 
         public override string FormatErrorMessage(string name)
         {
-            return $"{name} should be less than or equal to {_comparisonPropertyName}.";
+            return $"{name} should be greater than or equal to {_comparisonPropertyName}.";
         }
     }
 }

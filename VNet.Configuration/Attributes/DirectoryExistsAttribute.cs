@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
 
-namespace VNet.Configuration
+namespace VNet.Configuration.Attributes
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public class DirectoryExistsAttribute : ValidationAttribute

@@ -1,4 +1,4 @@
-﻿namespace VNet.Configuration
+﻿namespace VNet.Configuration.Attributes
 {
     [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class TooltipAttribute : Attribute

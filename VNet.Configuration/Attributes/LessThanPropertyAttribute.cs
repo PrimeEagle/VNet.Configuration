@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace VNet.Configuration
+namespace VNet.Configuration.Attributes
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
     public class LessThanPropertyAttribute : ValidationAttribute
