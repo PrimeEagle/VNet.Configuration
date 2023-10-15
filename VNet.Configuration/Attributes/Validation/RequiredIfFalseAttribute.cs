@@ -1,8 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+
 #pragma warning disable CS8765 // Nullability of type of parameter doesn't match overridden member (possibly because of nullability attributes).
 #pragma warning disable CS8603 // Possible null reference return.
 
-namespace VNet.Configuration.Attributes
+namespace VNet.Configuration.Attributes.Validation
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
     public class RequiredIfFalseAttribute : ValidationAttribute
@@ -14,7 +15,7 @@ namespace VNet.Configuration.Attributes
             _booleanPropertyName = booleanPropertyName;
         }
 
-        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+        protected override ValidationResult IsValid(object? value, ValidationContext validationContext)
         {
             var booleanProperty = validationContext.ObjectType.GetProperty(_booleanPropertyName);
             if (booleanProperty == null)

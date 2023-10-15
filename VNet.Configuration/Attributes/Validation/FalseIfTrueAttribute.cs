@@ -1,10 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
+
 #pragma warning disable CS8605 // Unboxing a possibly null value.
 #pragma warning disable CS8603 // Possible null reference return.
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
-namespace VNet.Configuration.Attributes
+namespace VNet.Configuration.Attributes.Validation
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public class FalseIfTrueAttribute : ValidationAttribute
@@ -16,7 +17,7 @@ namespace VNet.Configuration.Attributes
             _dependentPropertyName = dependentPropertyName;
         }
 
-        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+        protected override ValidationResult IsValid(object? value, ValidationContext validationContext)
         {
             var currentProperty = validationContext.ObjectType.GetProperty(validationContext.MemberName);
             if (currentProperty.PropertyType != typeof(bool))

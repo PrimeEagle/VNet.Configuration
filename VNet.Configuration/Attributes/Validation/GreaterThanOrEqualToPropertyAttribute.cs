@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace VNet.Configuration.Attributes
+namespace VNet.Configuration.Attributes.Validation
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
     public class GreaterThanOrEqualToPropertyAttribute : ValidationAttribute
@@ -12,7 +12,7 @@ namespace VNet.Configuration.Attributes
             _comparisonPropertyName = comparisonPropertyName;
         }
 
-        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+        protected override ValidationResult IsValid(object? value, ValidationContext validationContext)
         {
             var comparisonPropertyInfo = validationContext.ObjectType.GetProperty(_comparisonPropertyName);
             if (comparisonPropertyInfo == null)
