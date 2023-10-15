@@ -1,4 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
+// ReSharper disable ClassNeverInstantiated.Global
+// ReSharper disable CompareOfFloatsByEqualityOperator
+#pragma warning disable CS8605 // Unboxing a possibly null value.
 
 // ReSharper disable ParameterTypeCanBeEnumerable.Local
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
@@ -10,13 +13,15 @@
 namespace VNet.Configuration.Attributes.Validation
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
-    public class RangeIsPercentageWithPropertiesAttribute : ValidationAttribute
+    public class RangeIfTrueAttribute : ValidationAttribute
     {
         private readonly string[] _comparisonPropertyNames;
+        private readonly double[] _values;
 
-        public RangeIsPercentageWithPropertiesAttribute(string[] comparisonPropertyNames)
+        public RangeIfTrueAttribute(object[] values, string[] comparisonPropertyNames)
         {
             _comparisonPropertyNames = comparisonPropertyNames.Select(s => s.Trim()).ToArray();
+            _values = values.Select(Convert.ToDouble).ToArray();
         }
 
         protected override ValidationResult IsValid(object? value, ValidationContext validationContext)
@@ -24,12 +29,13 @@ namespace VNet.Configuration.Attributes.Validation
             var currentProperty = validationContext.ObjectType.GetProperty(validationContext.MemberName);
             if (!typeof(IRange).IsAssignableFrom(currentProperty.PropertyType))
             {
-                throw new InvalidOperationException($"{nameof(RangeIsPercentageWithPropertiesAttribute)} can only be applied to IRange properties.");
+                throw new InvalidOperationException($"{nameof(RangeIfTrueAttribute)} can only be applied to IRange properties.");
             }
 
-            var range = (IRange)value;
-            var sumStart = Convert.ToDouble(range.Start);
-            var sumEnd = Convert.ToDouble(range.End);
+            var valRange = (IRange)value;
+            var valStart = Convert.ToDouble(valRange.Start);
+            var valEnd = Convert.ToDouble(valRange.End);
+            bool comparisonValue = false;
 
             foreach (var comparisonPropertyName in _comparisonPropertyNames)
             {
@@ -39,12 +45,10 @@ namespace VNet.Configuration.Attributes.Validation
                 if (!typeof(IRange).IsAssignableFrom(comparisonPropertyInfo.PropertyType))
                     return new ValidationResult($"Property {comparisonPropertyName} must be of type IRange.");
 
-                var comparisonValue = (IRange)comparisonPropertyInfo.GetValue(validationContext.ObjectInstance);
-                sumStart += Convert.ToDouble(comparisonValue.Start);
-                sumEnd += Convert.ToDouble(comparisonValue.End);
+                comparisonValue = (bool)comparisonPropertyInfo.GetValue(validationContext.ObjectInstance);
             }
 
-            return Math.Abs(sumStart - 100d) < double.Epsilon && Math.Abs(sumEnd - 100d) < double.Epsilon
+            return comparisonValue && (valStart != _values[0] || valEnd != _values[1])
                 ? ValidationResult.Success
                 : new ValidationResult(ErrorMessage);
         }

@@ -8,13 +8,15 @@
 namespace VNet.Configuration.Attributes.Validation
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    public class TrueIfTrueAttribute : ValidationAttribute
+    public class ValueIfFalseAttribute : ValidationAttribute
     {
         private readonly string _dependentPropertyName;
+        private readonly object? _value;
 
-        public TrueIfTrueAttribute(string dependentPropertyName)
+        public ValueIfFalseAttribute(object? value, string dependentPropertyName)
         {
             _dependentPropertyName = dependentPropertyName;
+            _value = value;
         }
 
         protected override ValidationResult IsValid(object? value, ValidationContext validationContext)
@@ -22,7 +24,7 @@ namespace VNet.Configuration.Attributes.Validation
             var currentProperty = validationContext.ObjectType.GetProperty(validationContext.MemberName);
             if (currentProperty.PropertyType != typeof(bool))
             {
-                throw new InvalidOperationException($"{nameof(FalseIfFalseAttribute)} can only be applied to boolean properties.");
+                throw new InvalidOperationException($"{nameof(ValueIfFalseAttribute)} can only be applied to boolean properties.");
             }
 
             // Get the object and property value
@@ -56,8 +58,8 @@ namespace VNet.Configuration.Attributes.Validation
                 {
                     var dependentValue = (bool)property.GetValue(containerInstance);
 
-                    var currentValue = (bool)value;
-                    if (dependentValue && !currentValue)
+                    var currentValue = currentProperty.GetValue(currentProperty);
+                    if (!dependentValue && currentValue != value)
                     {
                         return new ValidationResult(ErrorMessage);
                     }

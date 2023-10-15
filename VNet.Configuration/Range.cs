@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel;
 using System.Numerics;
-
+// ReSharper disable ClassWithVirtualMembersNeverInherited.Global
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace VNet.Configuration
 {
-    public class Range<T> : INotifyPropertyChanged where T : INumber<T>,
+    public class Range<T> : IRange, INotifyPropertyChanged where T : INumber<T>,
                             IComparable<T>,
                             IEquatable<T>
     {

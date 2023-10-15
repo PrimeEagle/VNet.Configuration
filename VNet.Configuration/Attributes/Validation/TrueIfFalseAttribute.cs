@@ -22,28 +22,52 @@ namespace VNet.Configuration.Attributes.Validation
             var currentProperty = validationContext.ObjectType.GetProperty(validationContext.MemberName);
             if (currentProperty.PropertyType != typeof(bool))
             {
-                throw new InvalidOperationException($"{nameof(TrueIfFalseAttribute)} can only be applied to boolean properties.");
+                throw new InvalidOperationException($"{nameof(FalseIfFalseAttribute)} can only be applied to boolean properties.");
             }
 
-            var dependentProperty = validationContext.ObjectType.GetProperty(_dependentPropertyName);
-            if (dependentProperty == null)
+            // Get the object and property value
+            var containerType = validationContext.ObjectType;
+            var containerInstance = validationContext.ObjectInstance;
+            var pathParts = _dependentPropertyName.Split('.');
+
+            // Navigate the path to get to the dependent property
+            foreach (var part in pathParts)
             {
-                return new ValidationResult($"Unknown property: {_dependentPropertyName}");
-            }
-            if (dependentProperty.PropertyType != typeof(bool))
-            {
-                return new ValidationResult($"{nameof(TrueIfFalseAttribute)} can only be used with a boolean dependent property.");
+                var property = containerType.GetProperty(part);
+                if (property == null)
+                {
+                    return new ValidationResult($"Unknown property: {part}");
+                }
+
+                if (property.PropertyType != typeof(bool) && pathParts.Last() != part)
+                {
+                    containerType = property.PropertyType;
+                    containerInstance = property.GetValue(containerInstance);
+                    if (containerInstance == null)
+                    {
+                        return new ValidationResult($"Property path {part} returned null.");
+                    }
+                }
+                else if (property.PropertyType != typeof(bool))
+                {
+                    return new ValidationResult($"{nameof(FalseIfFalseAttribute)} can only be used with a boolean dependent property.");
+                }
+                else
+                {
+                    var dependentValue = (bool)property.GetValue(containerInstance);
+
+                    var currentValue = (bool)value;
+                    if (!dependentValue && !currentValue)
+                    {
+                        return new ValidationResult(ErrorMessage);
+                    }
+
+                    return ValidationResult.Success;
+                }
             }
 
-            var currentValue = (bool)value;
-            var dependentValue = (bool)dependentProperty.GetValue(validationContext.ObjectInstance);
-
-            if (!dependentValue && !currentValue)
-            {
-                return new ValidationResult(ErrorMessage);
-            }
-
-            return ValidationResult.Success;
+            // If code execution reaches here, something has gone wrong with our path navigation
+            return new ValidationResult($"Unknown error in {nameof(FalseIfFalseAttribute)}.");
         }
     }
 }
