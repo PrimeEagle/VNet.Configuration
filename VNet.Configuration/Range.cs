@@ -34,6 +34,9 @@ namespace VNet.Configuration
             }
         }
 
+        object IRange.Start => this.Start;
+        object IRange.End => this.End;
+
         public Range(T start, T end)
         {
             if (start.CompareTo(end) > 0)
