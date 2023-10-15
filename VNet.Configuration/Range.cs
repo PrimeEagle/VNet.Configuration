@@ -1,25 +1,16 @@
 ﻿using System.ComponentModel;
 using System.Numerics;
 
+// ReSharper disable ClassNeverInstantiated.Global
+
 namespace VNet.Configuration
 {
     public class Range<T> : INotifyPropertyChanged where T : INumber<T>,
                             IComparable<T>,
                             IEquatable<T>
     {
-        private T _start;
         private T _end;
-
-        public T Start
-        {
-            get => _start;
-            set
-            {
-                if (EqualityComparer<T>.Default.Equals(_start, value)) return;
-                _start = value;
-                OnPropertyChanged(nameof(Start));
-            }
-        }
+        private T _start;
 
         public T End
         {
@@ -29,6 +20,17 @@ namespace VNet.Configuration
                 if (EqualityComparer<T>.Default.Equals(_end, value)) return;
                 _end = value;
                 OnPropertyChanged(nameof(End));
+            }
+        }
+
+        public T Start
+        {
+            get => _start;
+            set
+            {
+                if (EqualityComparer<T>.Default.Equals(_start, value)) return;
+                _start = value;
+                OnPropertyChanged(nameof(Start));
             }
         }
 
@@ -42,11 +44,11 @@ namespace VNet.Configuration
             _end = end;
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
     }
 }
