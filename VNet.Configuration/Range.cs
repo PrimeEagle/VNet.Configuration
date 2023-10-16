@@ -53,5 +53,12 @@ namespace VNet.Configuration
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
+
+
+
+        public bool IsInRange(double value)
+        {
+            return value >= Convert.ToDouble(Start) && value <= Convert.ToDouble(End);
+        }
     }
 }

@@ -6,5 +6,9 @@ namespace VNet.Configuration
     {
         public object Start { get; }
         public object End { get; }
+
+
+
+        public bool IsInRange(double value);
     }
 }
