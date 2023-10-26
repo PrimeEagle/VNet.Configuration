@@ -27,36 +27,45 @@ public class SqLiteConfigurationProvider : ConfigurationProvider
     {
         var data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
-        await using (var connection = new SqliteConnection(Source.ConnectionString))
+        await using var connection = new SqliteConnection(Source.ConnectionString);
+        try
         {
-            try
+            await connection.OpenAsync();
+
+            const string query = """
+                                 
+                                             SELECT c.Name, s.Key, s.Value
+                                             FROM Settings s
+                                             INNER JOIN Categories c ON s.CategoryId = c.Id
+                                 """;
+
+            await using var command = new SqliteCommand(query, connection);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                await connection.OpenAsync();
-                await using var command = new SqliteCommand(Source.LoadQuery, connection);
-                await using var reader = await command.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
+                var category = reader.GetString(0);
+                var keyName = reader.GetString(1);
+                var fullKey = $"{category}:{keyName}";
+
+                var value = reader.IsDBNull(2) ? null : reader.GetString(2);
+
+                if (data.ContainsKey(fullKey))
                 {
-                    var key = reader.GetString(0);
-                    var value = reader.IsDBNull(1) ? null : reader.GetString(1);
-
-                    if (data.ContainsKey(key))
-                    {
-                        throw new InvalidOperationException($"Duplicated key '{key}' found in configuration.");
-                    }
-
-                    data[key] = value;
+                    throw new InvalidOperationException($"Duplicated key '{fullKey}' found in configuration.");
                 }
-            }
-            catch (Exception ex) when (ex is SqliteException or InvalidOperationException)
-            {
-                _logger.LogError(ex, "An error occurred while loading the configuration.");
-                throw;
-            }
 
-            finally
-            {
-                await connection.CloseAsync();
+                data[fullKey] = value;
             }
+        }
+        catch (SqliteException ex)
+        {
+            _logger.LogError(ex, "An error occurred while loading the configuration from SQLite.");
+            throw;
+        }
+        finally
+        {
+            await connection.CloseAsync();
         }
 
         Data = data;
@@ -66,14 +75,14 @@ public class SqLiteConfigurationProvider : ConfigurationProvider
     {
         await using var connection = new SqliteConnection(Source.ConnectionString);
         await connection.OpenAsync();
+        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync();
 
-        await using var transaction = connection.BeginTransaction();
         try
         {
             foreach (var kvp in data)
             {
                 var commandText = Source.SaveCommand;
-                await using var command = new SqliteCommand(commandText, connection);
+                await using var command = new SqliteCommand(commandText, connection, transaction);
                 command.Parameters.AddWithValue("@Key", kvp.Key);
                 command.Parameters.AddWithValue("@Value", kvp.Value);
 
@@ -87,12 +96,15 @@ public class SqLiteConfigurationProvider : ConfigurationProvider
             await transaction.RollbackAsync();
             throw;
         }
+        finally
+        {
+            await connection.CloseAsync();
+        }
     }
 
     public override void Set(string key, string? value)
     {
         base.Set(key, value);
-
         if (value != null) SaveAsync(new Dictionary<string, string> {{key, value}}).GetAwaiter().GetResult();
     }
 }
