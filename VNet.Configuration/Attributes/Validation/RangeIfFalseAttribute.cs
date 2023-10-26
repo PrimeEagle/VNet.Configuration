@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Numerics;
 // ReSharper disable ClassNeverInstantiated.Global
 // ReSharper disable CompareOfFloatsByEqualityOperator
 // ReSharper disable ParameterTypeCanBeEnumerable.Local
@@ -14,44 +15,50 @@
 namespace VNet.Configuration.Attributes.Validation
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
-    public class RangeIfFalseAttribute : ValidationAttribute
+    public class RangeIfFalseAttribute<T> : ValidationAttribute where T : INumber<T>
     {
         private readonly string _comparisonPropertyName;
-        private readonly double _start;
-        private readonly double _end;
+        private readonly T _start;
+        private readonly T _end;
 
-
-        public RangeIfFalseAttribute(double start, double end, string comparisonPropertyName)
+        public RangeIfFalseAttribute(T start, T end, string comparisonPropertyName)
         {
             _comparisonPropertyName = comparisonPropertyName.Trim();
             _start = start;
             _end = end;
         }
 
-        protected override ValidationResult IsValid(object? value, ValidationContext validationContext)
+        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
             var currentProperty = validationContext.ObjectType.GetProperty(validationContext.MemberName);
-            if (!typeof(IRange).IsAssignableFrom(currentProperty.PropertyType))
+            if (currentProperty == null || !typeof(IRange<T>).IsAssignableFrom(currentProperty.PropertyType))
             {
-                throw new InvalidOperationException($"{nameof(RangeIfFalseAttribute)} can only be applied to IRange properties.");
+                throw new InvalidOperationException($"{nameof(RangeIfFalseAttribute<T>)} can only be applied to IRange properties.");
             }
 
-            var valRange = (IRange)value;
-            var valStart = Convert.ToDouble(valRange.Start);
-            var valEnd = Convert.ToDouble(valRange.End);
+            // Null-checking might still be relevant depending on your context
+            var valRange = (IRange<T>)value;
+            var valStart = valRange.Start;
+            var valEnd = valRange.End;
             var comparisonValue = false;
-
 
             var comparisonPropertyInfo = validationContext.ObjectType.GetProperty(_comparisonPropertyName);
             if (comparisonPropertyInfo == null)
+            {
                 return new ValidationResult($"Property {_comparisonPropertyName} not found.");
-            if (!typeof(IRange).IsAssignableFrom(comparisonPropertyInfo.PropertyType))
-                return new ValidationResult($"Property {_comparisonPropertyName} must be of type IRange.");
+            }
+
+            if (!typeof(bool).IsAssignableFrom(comparisonPropertyInfo.PropertyType))
+            {
+                return new ValidationResult($"Property {_comparisonPropertyName} must be of type bool.");
+            }
 
             comparisonValue = (bool)comparisonPropertyInfo.GetValue(validationContext.ObjectInstance);
 
+            // Now, we can use T's comparison thanks to INumber's capabilities.
+            var isOutOfRange = !valStart.Equals(_start) || !valEnd.Equals(_end);
 
-            return !comparisonValue && (valStart != _start || valEnd != _end)
+            return !comparisonValue && isOutOfRange
                 ? ValidationResult.Success
                 : new ValidationResult(ErrorMessage);
         }

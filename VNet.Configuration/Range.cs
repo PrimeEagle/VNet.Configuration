@@ -5,7 +5,7 @@ using System.Numerics;
 
 namespace VNet.Configuration
 {
-    public class Range<T> : IRange, INotifyPropertyChanged where T : INumber<T>,
+    public class Range<T> : IRange<T>, INotifyPropertyChanged where T : INumber<T>,
                             IComparable<T>,
                             IEquatable<T>
     {
@@ -34,8 +34,8 @@ namespace VNet.Configuration
             }
         }
 
-        object IRange.Start => this.Start;
-        object IRange.End => this.End;
+        T IRange<T>.Start => this.Start;
+        T IRange<T>.End => this.End;
 
         public Range(T start, T end)
         {

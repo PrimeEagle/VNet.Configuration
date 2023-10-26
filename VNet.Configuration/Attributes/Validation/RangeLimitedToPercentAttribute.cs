@@ -1,17 +1,17 @@
 ﻿using System.ComponentModel.DataAnnotations;
-// ReSharper disable CompareOfFloatsByEqualityOperator
+using System.Numerics;
 
+// ReSharper disable CompareOfFloatsByEqualityOperator
 // ReSharper disable ParameterTypeCanBeEnumerable.Local
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable CS8603 // Possible null reference return.
 #pragma warning disable CS8604 // Possible null reference argument.
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
 
 
 namespace VNet.Configuration.Attributes.Validation
 {
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
-    public class RangeLimitedToPercentAttribute : ValidationAttribute
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+    public class RangeLimitedToPercentAttribute<T> : ValidationAttribute
+        where T : struct, INumber<T>
     {
         public RangeLimitedToPercentAttribute()
         {
@@ -20,16 +20,23 @@ namespace VNet.Configuration.Attributes.Validation
         protected override ValidationResult IsValid(object? value, ValidationContext validationContext)
         {
             var currentProperty = validationContext.ObjectType.GetProperty(validationContext.MemberName);
-            if (!typeof(IRange).IsAssignableFrom(currentProperty.PropertyType))
+
+            if (currentProperty == null || !typeof(IRange<T>).IsAssignableFrom(currentProperty.PropertyType))
             {
-                throw new InvalidOperationException($"{nameof(RangeLimitedToPercentAttribute)} can only be applied to IRange properties.");
+                throw new InvalidOperationException($"{nameof(RangeLimitedToPercentAttribute<T>)} can only be applied to IRange properties.");
             }
 
-            var range = (IRange)value;
-            var valStart = Convert.ToDouble(range.Start);
-            var valEnd = Convert.ToDouble(range.End);
+            if (value is not IRange<T> range)
+            {
+                return new ValidationResult($"Invalid type. Expected an IRange but got {value?.GetType()}.");
+            }
 
-            return valStart != 0 || valEnd != 100
+            var zero = T.Zero;
+            var oneHundred = T.One * (T)Convert.ChangeType(100, typeof(T));
+            var isStartOutOfRange = range.Start.CompareTo(zero) != 0;
+            var isEndOutOfRange = range.End.CompareTo(oneHundred) != 0;
+
+            return isStartOutOfRange || isEndOutOfRange
                 ? ValidationResult.Success
                 : new ValidationResult(ErrorMessage);
         }
