@@ -11,7 +11,7 @@ namespace VNet.Configuration.ConfigurationSources
 {
     public class SqLiteConfigurationSource : IConfigurationSource
     {
-        private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger _logger;
 
 
         public string ConnectionString { get; set; }
@@ -19,14 +19,14 @@ namespace VNet.Configuration.ConfigurationSources
         public string SaveCommand { get; set; }
 
 
-        public SqLiteConfigurationSource(ILoggerFactory loggerFactory)
+        public SqLiteConfigurationSource(ILogger logger)
         {
-            _loggerFactory = loggerFactory;
+            _logger = logger;
         }
 
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
-            return new SqLiteConfigurationProvider(this, _loggerFactory);
+            return new SqLiteConfigurationProvider(this, _logger);
         }
     }
 }

@@ -17,9 +17,9 @@ public class SqLiteConfigurationProvider : ConfigurationProvider
 
     public SqLiteConfigurationSource Source { get; }
 
-    public SqLiteConfigurationProvider(SqLiteConfigurationSource source, ILoggerFactory loggerFactory)
+    public SqLiteConfigurationProvider(SqLiteConfigurationSource source, ILogger logger)
     {
-        _logger = loggerFactory.CreateLogger<SqLiteConfigurationProvider>();
+        _logger = logger;
         Source = source ?? throw new ArgumentNullException(nameof(source));
     }
 
@@ -34,19 +34,19 @@ public class SqLiteConfigurationProvider : ConfigurationProvider
         await connection.OpenAsync();
 
         const string query = """
-                             
-                                     WITH RECURSIVE CategoryPath(Id, Name, Path) AS (
-                                         SELECT Id, Name, Name as Path FROM Categories WHERE ParentCategoryId IS NULL
-                                         UNION ALL
-                                         SELECT c.Id, c.Name, CONCAT(cp.Path, ':', c.Name)
-                                         FROM CategoryPath cp
-                                         JOIN Categories c ON cp.Id = c.ParentCategoryId
-                                     )
-                                     SELECT cp.Path, s.Key, s.Value
-                                     FROM Settings s
-                                     JOIN Categories c ON s.CategoryId = c.Id
-                                     JOIN CategoryPath cp ON c.Id = cp.Id
+                                 WITH RECURSIVE CategoryPath(Id, Name, Path) AS (
+                                     SELECT Id, Name, Name as Path FROM Categories WHERE ParentCategoryId IS NULL
+                                     UNION ALL
+                                     SELECT c.Id, c.Name, cp.Path || ':' || c.Name AS Path
+                                     FROM CategoryPath cp
+                                     JOIN Categories c ON cp.Id = c.ParentCategoryId
+                                 )
+                                 SELECT cp.Path, s.Key, s.Value
+                                 FROM Settings s
+                                 JOIN Categories c ON s.CategoryId = c.Id
+                                 JOIN CategoryPath cp ON c.Id = cp.Id
                              """;
+
 
         await using var command = new SqliteCommand(query, connection);
         await using var reader = await command.ExecuteReaderAsync();
