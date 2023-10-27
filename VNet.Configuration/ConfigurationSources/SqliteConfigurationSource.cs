@@ -9,7 +9,7 @@ using VNet.Configuration.ConfigurationProviders;
 
 namespace VNet.Configuration.ConfigurationSources
 {
-    public class SqLiteConfigurationSource : IConfigurationSource
+    public class SqliteConfigurationSource : IConfigurationSource
     {
         private readonly ILogger _logger;
 
@@ -19,14 +19,14 @@ namespace VNet.Configuration.ConfigurationSources
         public string SaveCommand { get; set; }
 
 
-        public SqLiteConfigurationSource(ILogger logger)
+        public SqliteConfigurationSource(ILogger logger)
         {
             _logger = logger;
         }
 
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
-            return new SqLiteConfigurationProvider(this, _logger);
+            return new SqliteConfigurationProvider(this, _logger);
         }
     }
 }

@@ -11,13 +11,13 @@ using VNet.Configuration.ConfigurationSources;
 
 namespace VNet.Configuration.ConfigurationProviders;
 
-public class SqLiteConfigurationProvider : ConfigurationProvider
+public class SqliteConfigurationProvider : ConfigurationProvider
 {
     private readonly ILogger _logger;
 
-    public SqLiteConfigurationSource Source { get; }
+    public SqliteConfigurationSource Source { get; }
 
-    public SqLiteConfigurationProvider(SqLiteConfigurationSource source, ILogger logger)
+    public SqliteConfigurationProvider(SqliteConfigurationSource source, ILogger logger)
     {
         _logger = logger;
         Source = source ?? throw new ArgumentNullException(nameof(source));
@@ -86,19 +86,32 @@ public class SqLiteConfigurationProvider : ConfigurationProvider
                 var keySegments = kvp.Key.Split(':');
                 var settingKey = keySegments.Last();
                 var categoryPath = string.Join(':', keySegments.Take(keySegments.Length - 1));
-                var categoryId = await ResolveCategoryIdFromPathAsync(connection, categoryPath); // this line uses the method
+                var categoryId = await ResolveCategoryIdFromPathAsync(connection, categoryPath);
 
-                const string commandText = """
-                                           
-                                                   UPDATE Settings
-                                                   SET Value = @Value
-                                                   WHERE Key = @Key AND CategoryId = @CategoryId
-                                           """;
+                // Check if the setting already exists
+                const string checkCommandText = "SELECT COUNT(1) FROM Settings WHERE Key = @Key AND CategoryId = @CategoryId";
+                await using var checkCommand = new SqliteCommand(checkCommandText, connection);
+                checkCommand.Parameters.AddWithValue("@Key", settingKey);
+                checkCommand.Parameters.AddWithValue("@CategoryId", categoryId);
 
+                var exists = Convert.ToInt32(await checkCommand.ExecuteScalarAsync()) > 0;
+
+                var commandText =
+                    // Update the existing setting
+                    exists ? """
+                             UPDATE Settings
+                             SET Value = @Value
+                             WHERE Key = @Key AND CategoryId = @CategoryId
+                             """ : """
+                                   INSERT INTO Settings (Key, Value, CategoryId)
+                                   VALUES (@Key, @Value, @CategoryId)
+                                   """;
+                // Insert the new setting
                 await using var command = new SqliteCommand(commandText, connection, transaction);
                 command.Parameters.AddWithValue("@Key", settingKey);
                 command.Parameters.AddWithValue("@Value", kvp.Value);
                 command.Parameters.AddWithValue("@CategoryId", categoryId);
+
                 await command.ExecuteNonQueryAsync();
             }
 
@@ -174,5 +187,4 @@ public class SqLiteConfigurationProvider : ConfigurationProvider
 
         return string.Join(":", pathSegments);
     }
-
 }
