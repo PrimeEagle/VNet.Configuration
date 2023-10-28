@@ -35,15 +35,15 @@ public class SqliteConfigurationProvider : ConfigurationProvider
 
         const string query = """
                                  WITH RECURSIVE CategoryPath(Id, Name, Path) AS (
-                                     SELECT Id, Name, Name as Path FROM Categories WHERE ParentCategoryId IS NULL
+                                     SELECT Id, Name, Name as Path FROM SettingCategory WHERE ParentCategoryId IS NULL
                                      UNION ALL
                                      SELECT c.Id, c.Name, cp.Path || ':' || c.Name AS Path
                                      FROM CategoryPath cp
-                                     JOIN Categories c ON cp.Id = c.ParentCategoryId
+                                     JOIN SettingCategory c ON cp.Id = c.ParentCategoryId
                                  )
                                  SELECT cp.Path, s.Key, s.Value
-                                 FROM Settings s
-                                 JOIN Categories c ON s.CategoryId = c.Id
+                                 FROM Setting s
+                                 JOIN Category c ON s.CategoryId = c.Id
                                  JOIN CategoryPath cp ON c.Id = cp.Id
                              """;
 
@@ -99,11 +99,11 @@ public class SqliteConfigurationProvider : ConfigurationProvider
                 var commandText =
                     // Update the existing setting
                     exists ? """
-                             UPDATE Settings
+                             UPDATE Setting
                              SET Value = @Value
                              WHERE Key = @Key AND CategoryId = @CategoryId
                              """ : """
-                                   INSERT INTO Settings (Key, Value, CategoryId)
+                                   INSERT INTO Setting (Key, Value, CategoryId)
                                    VALUES (@Key, @Value, @CategoryId)
                                    """;
                 // Insert the new setting
@@ -142,7 +142,7 @@ public class SqliteConfigurationProvider : ConfigurationProvider
 
         foreach (var category in categories)
         {
-            await using var command = new SqliteCommand("SELECT Id FROM Categories WHERE Name = @Name AND (@ParentId IS NULL OR ParentCategoryId = @ParentId)", connection);
+            await using var command = new SqliteCommand("SELECT Id FROM SettingCategory WHERE Name = @Name AND (@ParentId IS NULL OR ParentCategoryId = @ParentId)", connection);
             command.Parameters.AddWithValue("@Name", category);
 
             if (categoryId.HasValue)
@@ -171,7 +171,7 @@ public class SqliteConfigurationProvider : ConfigurationProvider
 
         while (categoryId != 0)
         {
-            const string query = "SELECT Name, ParentCategoryId FROM Categories WHERE Id = @Id";
+            const string query = "SELECT Name, ParentCategoryId FROM SettingCategory WHERE Id = @Id";
             await using var command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@Id", categoryId);
 
