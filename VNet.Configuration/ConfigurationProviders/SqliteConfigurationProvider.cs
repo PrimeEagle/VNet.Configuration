@@ -43,7 +43,7 @@ public class SqliteConfigurationProvider : ConfigurationProvider
                                  )
                                  SELECT cp.Path, s.Key, s.Value
                                  FROM Setting s
-                                 JOIN Category c ON s.CategoryId = c.Id
+                                 JOIN SettingCategory c ON s.CategoryId = c.Id
                                  JOIN CategoryPath cp ON c.Id = cp.Id
                              """;
 
